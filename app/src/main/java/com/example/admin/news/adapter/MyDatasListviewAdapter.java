@@ -22,7 +22,7 @@ import butterknife.ButterKnife;
  */
 
 public class MyDatasListviewAdapter extends BaseAdapter {
-    private List<NewsBean.ResultBean.DataBean> datas;
+    public List<NewsBean.ResultBean.DataBean> datas;
     private Context context;
 
     public MyDatasListviewAdapter(List<NewsBean.ResultBean.DataBean> datas,Context context) {

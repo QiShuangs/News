@@ -1,8 +1,10 @@
 package com.example.admin.news.fragment;
 
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,8 +17,6 @@ import com.example.admin.news.Utils.Constant;
 import com.example.admin.news.Utils.NohttpInstance;
 import com.example.admin.news.adapter.MyDatasListviewAdapter;
 import com.example.admin.news.enty.NewsBean;
-import com.handmark.pulltorefresh.library.PullToRefreshBase;
-import com.handmark.pulltorefresh.library.PullToRefreshListView;
 import com.yolanda.nohttp.NoHttp;
 import com.yolanda.nohttp.rest.OnResponseListener;
 import com.yolanda.nohttp.rest.Request;
@@ -29,9 +29,11 @@ import java.util.List;
  */
 
 public class NewsBeanFragmnet extends Fragment{
-    private PullToRefreshListView listView;
+    private SwipeRefreshLayout layout;
     private String url = null;
-
+    private ListView listview;
+    private MyDatasListviewAdapter adapter;
+    private List<NewsBean.ResultBean.DataBean> datas;
     public NewsBeanFragmnet(String url) {
         this.url = url;
     }
@@ -39,20 +41,28 @@ public class NewsBeanFragmnet extends Fragment{
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        listView = (PullToRefreshListView) inflater.inflate(R.layout.layout_newsbean_fragment_activity_main, null);
-        listView.setOnRefreshListener(new PullToRefreshBase.OnRefreshListener<ListView>() {
+        layout = (SwipeRefreshLayout) inflater.inflate(R.layout.layout_newsbean_fragment_activity_main, null);
+        listview = (ListView) layout.findViewById(R.id.lv_news_fragment_activity_main);
+        layout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
-            public void onRefresh(PullToRefreshBase<ListView> refreshView) {
-                Toast.makeText(getContext(), "正在请求网络数据", Toast.LENGTH_SHORT).show();
-                listView.postDelayed(new Runnable() {
+            public void onRefresh() {
+                new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        listView.onRefreshComplete();
+                        SystemClock.sleep(2000);
+                        adapter.datas.remove(0);
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                adapter.notifyDataSetChanged();
+                                layout.setRefreshing(false);
+                            }
+                        });
                     }
-                }, 1000);
+                }).start();
             }
         });
-        return listView;
+        return layout;
     }
 
     @Override
@@ -61,7 +71,7 @@ public class NewsBeanFragmnet extends Fragment{
         Request<String> stringRequest = NoHttp.createStringRequest(Constant.BASE_URL +url);
         NohttpInstance.getInstance().add(Constant.WHAT_NENS_REQUEST, stringRequest, new OnResponseListener<String>() {
 
-            private List<NewsBean.ResultBean.DataBean> datas;
+
 
             @Override
             public void onStart(int what) {
@@ -73,8 +83,8 @@ public class NewsBeanFragmnet extends Fragment{
                 String result = response.get();
                 NewsBean newsBean = JSON.parseObject(result, NewsBean.class);
                 datas = newsBean.getResult().getData();
-                MyDatasListviewAdapter adapter = new MyDatasListviewAdapter(datas,getContext());
-                listView.setAdapter(adapter);
+                adapter = new MyDatasListviewAdapter(datas,getContext());
+                listview.setAdapter(adapter);
 
             }
 
